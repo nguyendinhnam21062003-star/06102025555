@@ -1,0 +1,20 @@
+# Root node_modules
+node_modules/
+
+# FE + BE node_modules
+frontend/node_modules/
+backend/node_modules/
+
+# env
+frontend/.env
+backend/.env
+.env
+
+# build
+frontend/dist/
+frontend/build/
+backend/dist/
+backend/build/
+
+# logs
+*.log
