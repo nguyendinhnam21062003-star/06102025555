@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Globe Express - Travel Concept</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- GSAP Animation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #ffffff;
+            --accent-color: #dcb158; /* Màu vàng cam từ video */
+            --text-gray: #e0e0e0;
+            --overlay-color: rgba(0, 0, 0, 0.4);
+            --transition-speed: 0.8s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #111;
+            color: var(--primary-color);
+            overflow: hidden; /* Ngăn cuộn trang để tạo cảm giác App */
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- BACKGROUND LAYER --- */
+        .bg-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transform: scale(1.1);
+            transition: opacity 1s ease;
+        }
+
+        .bg-image.active {
+            opacity: 1;
+            z-index: 1;
+            animation: kenburns 15s infinite alternate;
+        }
+
+        @keyframes kenburns {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        /* Overlay tối dần sang trái để chữ dễ đọc */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%);
+            z-index: 2;
+        }
+
+        /* --- NAVBAR --- */
+        nav {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .logo {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 3rem;
+            list-style: none;
+        }
+
+        .nav-links li a {
+            text-decoration: none;
+            color: var(--text-gray);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        .nav-links li a:hover, .nav-links li a.active {
+            color: var(--accent-color);
+        }
+
+        /* --- MAIN CONTENT LAYOUT --- */
+        main {
+            position: relative;
+            z-index: 5;
+            display: grid;
+            grid-template-columns: 45% 55%;
+            height: 100vh;
+            padding: 0 4rem;
+            align-items: center;
+        }
+
+        /* Left Content (Text) */
+        .content-left {
+            padding-right: 2rem;
+            transform: translateY(20px); /* Để animation */
+        }
+
+        .location-tag {
+            color: var(--text-gray);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .main-title {
+            font-family: 'Anton', sans-serif;
+            font-size: 7rem;
+            line-height: 0.9;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .description {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-gray);
+            margin-bottom: 2.5rem;
+            max-width: 400px;
+        }
+
+        .btn-discover {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-discover:hover {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: black;
+        }
+
+        /* Right Content (Slider) */
+        .slider-container {
+            position: relative;
+            width: 100%;
+            height: 450px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        .cards-wrapper {
+            display: flex;
+            gap: 20px;
+            position: absolute;
+            left: 0;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .card {
+            width: 260px;
+            height: 380px;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+        }
+
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+        
+        .card:hover img {
+            transform: scale(1.1);
+        }
+
+        .card-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+        }
+
+        .card-sub {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+        }
+
+        .card-title {
+            font-family: 'Anton', sans-serif;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        /* Controls */
+        .controls {
+            position: absolute;
+            bottom: 4rem;
+            left: 50%; /* Canh giữa slider */
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 20;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: black;
+        }
+
+        /* Page Counter */
+        .page-counter {
+            position: absolute;
+            bottom: 4rem;
+            right: 4rem;
+            font-family: 'Anton', sans-serif;
+            font-size: 4rem;
+            opacity: 0.5;
+        }
+
+        /* Loading Overlay */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Responsive Fixes */
+        @media (max-width: 1024px) {
+            .main-title { font-size: 4rem; }
+            main { grid-template-columns: 1fr; padding: 0 2rem; }
+            .slider-container { display: none; } /* Ẩn slider trên tablet dọc/mobile cho gọn */
+            .content-left { padding-right: 0; text-align: center; display: flex; flex-direction: column; align-items: center; }
+            .controls { left: 50%; transform: translateX(-50%); bottom: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div class="loader">
+        <h1 style="font-family: 'Anton', sans-serif; letter-spacing: 5px;">LOADING...</h1>
+    </div>
+
+    <!-- Background Images -->
+    <div class="bg-container" id="bg-container">
+        <!-- JS will populate this -->
+    </div>
+    
+    <div class="overlay"></div>
+
+    <!-- Navbar -->
+    <nav>
+        <div class="logo">
+            <i class="fa-solid fa-earth-americas"></i> GLOBE EXPRESS
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" class="active">Home</a></li>
+            <li><a href="#">Holidays</a></li>
+            <li><a href="#">Destinations</a></li>
+            <li><a href="#">Flights</a></li>
+            <li><a href="#">Offers</a></li>
+            <li><a href="#">Contact</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <!-- Left Content -->
+        <div class="content-left">
+            <div class="text-wrapper">
+                <span class="location-tag" id="location-tag">Loading...</span>
+                <h1 class="main-title" id="main-title">LOADING</h1>
+                <p class="description" id="description">Please wait while we fetch the amazing destinations for you.</p>
+                <button class="btn-discover">
+                    Discover Location <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+            
+            <!-- Controls (Placed here for logical flow, styled absolutely) -->
+            <div class="controls">
+                <button class="control-btn" id="prevBtn"><i class="fa-solid fa-chevron-left"></i></button>
+                <button class="control-btn" id="nextBtn"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Right Content: Slider -->
+        <div class="slider-container">
+            <div class="cards-wrapper" id="cards-wrapper">
+                <!-- JS will populate this -->
+            </div>
+        </div>
+    </main>
+
+    <div class="page-counter" id="page-counter">01</div>
+
+    <script>
+        // Data for the slides
+        const destinations = [
+            {
+                id: 1,
+                title: "SAINT ANTÖNIEN",
+                sub: "Switzerland Alps",
+                desc: "Mauris mattis auctor cursus. Phasellus tellus tellus, imperdiet ut imperdiet eu, iaculis a sem. Donec vehicula luctus nunc in laoreet. Aliquam erat volutpat. Suspendisse vulputate porttitor.",
+                img: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?q=80&w=2070&auto=format&fit=crop" // Swiss Alps
+            },
+            {
+                id: 2,
+                title: "NAGANO PREFECTURE",
+                sub: "Japan Alps",
+                desc: "Discover the snow monkeys of Jigokudani Monkey Park. A winter wonderland that offers a unique glimpse into the wild life of Japan amidst steaming hot springs.",
+                img: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=2070&auto=format&fit=crop" // Japanese Monkey
+            },
+            {
+                id: 3,
+                title: "MARRAKECH MERZOUGA",
+                sub: "Sahara Desert - Morocco",
+                desc: "Experience the golden dunes of the Sahara. Ride camels into the sunset and sleep under a blanket of stars in traditional Berber tents.",
+                img: "https://images.unsplash.com/photo-1539020140153-e479b8c22e70?q=80&w=2070&auto=format&fit=crop" // Desert
+            },
+            {
+                id: 4,
+                title: "YOSEMITE PARK",
+                sub: "Sierra Nevada - USA",
+                desc: "An icon of America's majestic natural beauty. California's Yosemite National Park features nearly 1,200 square miles of deep valleys, grand meadows, ancient giant sequoias.",
+                img: "https://images.unsplash.com/photo-1482938289607-e9573fc25abb?q=80&w=2070&auto=format&fit=crop" // Yosemite
+            },
+            {
+                id: 5,
+                title: "LOS LANCES BEACH",
+                sub: "Tarifa - Spain",
+                desc: "A paradise for kitesurfers and beach lovers. White sands stretch for miles meeting the crystal blue waters of the Atlantic Ocean.",
+                img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2073&auto=format&fit=crop" // Beach
+            }
+        ];
+
+        let currentIndex = 0;
+        const bgContainer = document.getElementById('bg-container');
+        const cardsWrapper = document.getElementById('cards-wrapper');
+        const locationTag = document.getElementById('location-tag');
+        const mainTitle = document.getElementById('main-title');
+        const description = document.getElementById('description');
+        const pageCounter = document.getElementById('page-counter');
+        const loader = document.querySelector('.loader');
+
+        // Initialize
+        window.addEventListener('load', () => {
+            gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.style.display = 'none' });
+            initApp();
+        });
+
+        function initApp() {
+            // Render Backgrounds
+            destinations.forEach((dest, index) => {
+                const img = document.createElement('img');
+                img.src = dest.img;
+                img.classList.add('bg-image');
+                if (index === 0) img.classList.add('active');
+                img.id = `bg-${index}`;
+                bgContainer.appendChild(img);
+            });
+
+            // Initial Content
+            updateContent(0);
+            renderCards();
+        }
+
+        // Render Slider Cards (excluding current one to mimic 'upcoming' feel)
+        function renderCards() {
+            cardsWrapper.innerHTML = '';
+            
+            // Logic: Show the next 3 items in the list, looping around
+            for (let i = 1; i <= 3; i++) {
+                let nextIndex = (currentIndex + i) % destinations.length;
+                const dest = destinations[nextIndex];
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <img src="${dest.img}" alt="${dest.title}">
+                    <div class="card-info">
+                        <div class="card-sub">${dest.sub}</div>
+                        <div class="card-title">${dest.title}</div>
+                    </div>
+                `;
+                // Click on card to jump to that slide
+                card.addEventListener('click', () => {
+                    handleNext(i); // Move 'i' steps forward
+                });
+                cardsWrapper.appendChild(card);
+            }
+        }
+
+        function updateContent(index) {
+            const dest = destinations[index];
+            
+            // GSAP Text Animations (Staggered Exit & Enter)
+            const tl = gsap.timeline();
+
+            // 1. Text Exit
+            tl.to([locationTag, mainTitle, description], {
+                y: -20,
+                opacity: 0,
+                duration: 0.4,
+                stagger: 0.05,
+                onComplete: () => {
+                    // Update Text DOM
+                    locationTag.textContent = dest.sub;
+                    mainTitle.textContent = dest.title;
+                    description.textContent = dest.desc;
+                    pageCounter.textContent = `0${index + 1}`;
+                }
+            })
+            // 2. Text Enter
+            .to([locationTag, mainTitle, description], {
+                y: 0,
+                opacity: 1,
+                duration: 0.6,
+                stagger: 0.1,
+                ease: "power2.out"
+            });
+
+            // Background Animation
+            document.querySelectorAll('.bg-image').forEach(img => img.classList.remove('active'));
+            const activeBg = document.getElementById(`bg-${index}`);
+            activeBg.classList.add('active');
+            
+            // Reset scale animation for the new background to create the "zoom" effect
+            activeBg.style.animation = 'none';
+            activeBg.offsetHeight; /* trigger reflow */
+            activeBg.style.animation = 'kenburns 15s infinite alternate';
+        }
+
+        function handleNext(steps = 1) {
+            currentIndex = (currentIndex + steps) % destinations.length;
+            
+            // Animate Cards: Slide Left then refresh
+            gsap.to('.card', {
+                x: -100,
+                opacity: 0,
+                duration: 0.3,
+                onComplete: () => {
+                    renderCards(); // Re-render with new order
+                    // Reset position for entrance animation
+                    gsap.fromTo('.card', 
+                        { x: 100, opacity: 0 }, 
+                        { x: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "power2.out" }
+                    );
+                }
+            });
+
+            updateContent(currentIndex);
+        }
+
+        function handlePrev() {
+            currentIndex = (currentIndex - 1 + destinations.length) % destinations.length;
+            
+            // Simple re-render for prev
+            renderCards();
+            gsap.fromTo('.card', 
+                { x: -50, opacity: 0 }, 
+                { x: 0, opacity: 1, duration: 0.5, stagger: 0.1 }
+            );
+            updateContent(currentIndex);
+        }
+
+        // Event Listeners
+        document.getElementById('nextBtn').addEventListener('click', () => handleNext(1));
+        document.getElementById('prevBtn').addEventListener('click', handlePrev);
+
+        // Keyboard Nav
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') handleNext(1);
+            if (e.key === 'ArrowLeft') handlePrev();
+        });
+
+    </script>
+</body>
+</html>
