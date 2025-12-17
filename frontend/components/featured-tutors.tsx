@@ -220,20 +220,24 @@ export function FeaturedTutors() {
           </CarouselContent>
 
           {/* Nút điều hướng */}
-          <CarouselPrevious
-            onClick={() => {
-              api?.scrollPrev();
-              plugin.current.reset();
-            }}
-            className="absolute left-2 top-1/2 -translate-y-1/2"
-          />
-          <CarouselNext
-            onClick={() => {
-              api?.scrollNext();
-              plugin.current.reset();
-            }}
-            className="absolute right-2 top-1/2 -translate-y-1/2"
-          />
+          <div className="mt-4 flex items-center justify-center gap-3 pb-1">
+            <CarouselPrevious
+              onClick={() => {
+                api?.scrollPrev();
+                plugin.current.reset();
+              }}
+              className="!static relative size-10 !translate-y-0 !left-auto !right-auto !top-auto !bottom-auto"
+              style={{ position: "static", transform: "none" }}
+            />
+            <CarouselNext
+              onClick={() => {
+                api?.scrollNext();
+                plugin.current.reset();
+              }}
+              className="!static relative size-10 !translate-y-0 !left-auto !right-auto !top-auto !bottom-auto"
+              style={{ position: "static", transform: "none" }}
+            />
+          </div>
         </Carousel>
       </CardContent>
     </Card>

@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
 import {
   type CSSProperties,
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { Anton, Manrope } from "next/font/google";
@@ -19,11 +20,14 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { FeaturedTutors } from "@/components/featured-tutors";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 const anton = Anton({
@@ -61,12 +65,12 @@ const heroColors: CSSProperties & CssVars = {
 const globeAccent = "#dcb158";
 
 const mockTutor = {
-  name: "Ethan Ngỗng",
+  name: "Ethan Ng",
   title: "Computer Science Tutor | VLU",
   email: "tutor@example.com",
   phone: "+84 912 345 678",
   location: "Ho Chi Minh City",
-  bio: "Short intro about t backend. Short intro about the tutor. Replace with data from backend.Short intro about the tutor. Replace with data from backend.",
+  bio: "Short intro about the tutor. Replace with data from backend.",
   skills: ["Algorithms", "Data Science", "AI"],
 };
 
@@ -128,58 +132,183 @@ const showcaseItems = [
   },
 ];
 
-const mockDocuments = [
+type GallerySlide = {
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+};
+
+const gallerySlides: GallerySlide[] = [
   {
-    id: 1,
-    user_id: 1,
-    title: "Linear Algebra Notes",
-    numeric_score: 4.8,
-    grade_band: "Year 2",
-    instructor_name: "Tutor Name",
-    document_type: "PDF",
-    access_type: "Free",
-    price: 0,
-    suitable_school: "VLU",
-    short_description: "Condensed notes for midterms.",
-    resource_type: "document",
-    resource_url: "#",
-    embed_allowed: true,
-    mime_type: "application/pdf",
-    storage_provider: "local",
-    file_size: 1258291,
-    created_at: "2024-10-01",
-    updated_at: "2024-10-10",
-    document_subjects: ["Math"],
-    document_fields: ["Linear Algebra"],
+    title: "Nordic Aurora",
+    subtitle: "Tromso, Norway",
+    description:
+      "Midnight skies painted with green ribbons and a quiet harbor below. Layered mountains meet cold sea air.",
+    image:
+      "https://images.unsplash.com/photo-1451186859696-371d9477be93?q=80&w=2070&auto=format&fit=crop",
   },
   {
-    id: 2,
-    user_id: 1,
-    title: "Intro to AI Slide Deck",
-    numeric_score: 4.6,
-    grade_band: "Year 3",
-    instructor_name: "Tutor Name",
-    document_type: "Slides",
-    access_type: "Paid",
-    price: 15,
-    suitable_school: "VLU",
-    short_description: "Lecture slides with examples.",
-    resource_type: "document",
-    resource_url: "#",
-    embed_allowed: true,
-    mime_type: "application/pdf",
-    storage_provider: "local",
-    file_size: 2097152,
-    created_at: "2024-09-12",
-    updated_at: "2024-09-20",
-    document_subjects: ["AI"],
-    document_fields: ["Machine Learning"],
+    title: "Terracotta Ridges",
+    subtitle: "Cappadocia, Turkey",
+    description:
+      "Soft volcanic cliffs carved by time and sunrise balloons that glide across a pastel horizon.",
+    image:
+      "https://images.unsplash.com/photo-1505764721224-76cec64a6107?q=80&w=2070&auto=format&fit=crop",
+  },
+  {
+    title: "Glass Fjords",
+    subtitle: "Naeroyfjord, Norway",
+    description:
+      "Quiet water mirrors sheer cliffs and pine forests, only interrupted by the wake of a lone ferry.",
+    image:
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=2070&auto=format&fit=crop",
+  },
+  {
+    title: "Desert Bloom",
+    subtitle: "Atacama, Chile",
+    description:
+      "Salt flats, flamingos, and distant volcano silhouettes. A thin layer of cloud softens the orange light.",
+    image:
+      "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?q=80&w=2070&auto=format&fit=crop",
+  },
+  {
+    title: "Cyan Coast",
+    subtitle: "Jeju Island, Korea",
+    description:
+      "Basalt cliffs drop into turquoise water while tangerine groves line the winding coastal roads.",
+    image:
+      "https://images.unsplash.com/photo-1543849400-17040aac1cba?q=80&w=2070&auto=format&fit=crop",
+  },
+  {
+    title: "Highland Mist",
+    subtitle: "Isle of Skye, Scotland",
+    description:
+      "Rolling hills and mirror lochs framed by low clouds. Trails weave between mossy outcrops.",
+    image:
+      "https://images.unsplash.com/photo-1505761671935-60b3a7427bad?q=80&w=2070&auto=format&fit=crop",
   },
 ];
 
+function FullscreenCarousel({
+  slides,
+  emblaRef,
+  activeIndex,
+}: {
+  slides: GallerySlide[];
+  emblaRef: (node: HTMLDivElement | null) => void;
+  activeIndex: number;
+}) {
+  return (
+    <div className="relative h-[78vh] min-h-[620px] overflow-hidden rounded-[28px] bg-transparent shadow-2xl">
+      <div className="absolute inset-0" ref={emblaRef}>
+        <div className="flex h-full">
+          {slides.map((slide, index) => (
+            <div
+              key={slide.title}
+              className="relative min-w-full shrink-0 overflow-hidden"
+            >
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700"
+                style={{
+                  backgroundImage: `url(${slide.image})`,
+                  transform: `scale(${activeIndex === index ? 1.02 : 1})`,
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-slate-950/80" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent" />
+
+              <div className="relative flex h-full flex-col justify-end px-6 pb-16 sm:px-10 lg:px-14">
+                <div className="max-w-2xl space-y-4 text-white drop-shadow">
+                  <p className="text-xs uppercase tracking-[0.35em] text-white/70">
+                    {slide.subtitle}
+                  </p>
+                  <h3 className="text-3xl font-semibold sm:text-4xl lg:text-5xl">
+                    {slide.title}
+                  </h3>
+                  <p className="max-w-xl text-sm leading-relaxed text-white/80 sm:text-base">
+                    {slide.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <span className="text-8xl font-black uppercase tracking-tight text-white/10 sm:text-9xl">
+          {String(activeIndex + 1).padStart(2, "0")}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ThumbnailCarousel({
+  slides,
+  selectedIndex,
+  onSelect,
+  emblaRef,
+}: {
+  slides: GallerySlide[];
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+  emblaRef: (node: HTMLDivElement | null) => void;
+}) {
+  return (
+    <div className="relative">
+      <div
+        ref={emblaRef}
+        className="overflow-hidden rounded-2xl  bg-transparent px-2 py-3 backdrop-blur"
+      >
+        <div className="flex gap-2.5">
+          {slides.map((slide, index) => {
+            const isActive = selectedIndex === index;
+            return (
+              <button
+                key={slide.title}
+                onClick={() => onSelect(index)}
+                type="button"
+                className="group relative flex w-[calc(100%/2-12px)] shrink-0 overflow-hidden rounded-xl transition duration-300 hover:-translate-y-0.5 hover:brightness-110 sm:w-[calc(100%/2-12px)] md:w-[calc(100%/4-12px)] lg:w-[calc(100%/6-12px)]"
+                aria-label={`Chuyen toi slide ${index + 1}`}
+              >
+                <div
+                  className="h-24 w-full bg-cover bg-center sm:h-28"
+                  style={{ backgroundImage: `url(${slide.image})` }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent transition duration-300 group-hover:from-black/50" />
+                <div className="absolute inset-0 rounded-xl border border-transparent transition duration-300 group-hover:border-white/30" />
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-left text-xs text-white">
+                  <div className="truncate">
+                    <p className="font-semibold leading-tight">{slide.title}</p>
+                    <p className="text-[11px] text-white/70">
+                      {slide.subtitle}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium">
+                    {index + 1}
+                  </span>
+                </div>
+                <div
+                  className={`absolute inset-0 rounded-xl transition duration-300 ${
+                    isActive
+                      ? "ring-2 ring-white/80 ring-offset-2 ring-offset-white/10"
+                      : "opacity-0"
+                  }`}
+                />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GlobeShowcase({ slides }: { slides: typeof showcaseItems }) {
   const [order, setOrder] = useState<number[]>(() =>
-    slides.map((_, index) => index),
+    slides.map((_, index) => index)
   );
   const [showLoader, setShowLoader] = useState(true);
   const activeIndex = order[1] ?? order[0] ?? 0;
@@ -554,7 +683,6 @@ function GlobeShowcase({ slides }: { slides: typeof showcaseItems }) {
           line-height: 1;
         }
 
-
         .ge-anim {
           opacity: 0;
           animation: geShowContent 1s ease-in-out forwards;
@@ -630,6 +758,66 @@ function GlobeShowcase({ slides }: { slides: typeof showcaseItems }) {
   );
 }
 
+function LayeredCarouselSection() {
+  const autoplay = useRef(
+    Autoplay({ delay: 5200, stopOnInteraction: false, stopOnMouseEnter: true })
+  );
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [mainRef, mainApi] = useEmblaCarousel(
+    {
+      loop: true,
+      align: "start",
+    },
+    [autoplay.current]
+  );
+  const [thumbRef, thumbApi] = useEmblaCarousel({
+    dragFree: true,
+    containScroll: "trimSnaps",
+    align: "start",
+  });
+
+  const onSelect = useCallback(() => {
+    if (!mainApi) return;
+    const index = mainApi.selectedScrollSnap();
+    setSelectedIndex(index);
+    thumbApi?.scrollTo(index);
+  }, [mainApi, thumbApi]);
+
+  useEffect(() => {
+    if (!mainApi) return;
+    onSelect();
+    mainApi.on("select", onSelect);
+    mainApi.on("reInit", onSelect);
+  }, [mainApi, onSelect]);
+
+  const scrollTo = useCallback(
+    (index: number) => {
+      mainApi?.scrollTo(index);
+    },
+    [mainApi]
+  );
+
+  return (
+    <section className="relative z-10 space-y-6 rounded-[32px] bg-transparent px-6 py-8 text-[color:var(--hero-foreground)] shadow-2xl lg:px-12 lg:py-12">
+      <div className="pointer-events-none absolute inset-0 rounded-[32px] bg-transparent" />
+
+      <FullscreenCarousel
+        slides={gallerySlides}
+        emblaRef={mainRef}
+        activeIndex={selectedIndex}
+      />
+      <div className="absolute inset-x-0 bottom-6 z-30 px-2 sm:px-4">
+        <ThumbnailCarousel
+          slides={gallerySlides}
+          onSelect={scrollTo}
+          selectedIndex={selectedIndex}
+          emblaRef={thumbRef}
+        />
+      </div>
+    </section>
+  );
+}
+
 export default function Page() {
   return (
     <SidebarProvider style={sidebarLayoutStyles}>
@@ -640,70 +828,69 @@ export default function Page() {
 
           <div
             style={heroColors}
-            className="relative flex flex-1 flex-col gap-8 bg-[color:var(--hero-bg)] px-[var(--page-padding)] py-6"
+            className="relative flex flex-1 flex-col px-[var(--page-padding)] py-6"
           >
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(var(--hero-grid)_1px,transparent_1px),linear-gradient(90deg,var(--hero-grid)_1px,transparent_1px)] bg-[size:60px_60px] bg-[position:var(--page-padding)_0]" />
 
-            <section className="relative z-10 grid gap-10 px-6 py-8 text-[color:var(--hero-foreground)] lg:grid-cols-[minmax(0,1.2fr)_auto] lg:items-center lg:px-12 lg:py-12">
-            <div className="flex flex-col gap-6">
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--hero-muted)]">
-                  About Me
+            <section className="relative z-10 grid gap-10 rounded-3xl bg-transparent px-6 py-8 text-[color:var(--hero-foreground)] lg:grid-cols-[minmax(0,1.2fr)_auto] lg:items-center lg:px-12 lg:py-12">
+              <div className="flex flex-col gap-6">
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.35em] text-[color:var(--hero-muted)]">
+                    About Me
+                  </p>
+                  <h1 className="text-3xl font-semibold leading-tight sm:text-4xl md:text-5xl">
+                    <span className="block text-[color:var(--hero-foreground)]">
+                      Xin chao, toi la
+                    </span>
+                    <span className="block bg-gradient-to-r from-[color:var(--primary)] via-[color:var(--accent)] to-[color:var(--secondary)] bg-clip-text text-transparent">
+                      {mockTutor.name}
+                    </span>
+                  </h1>
+                  <p className="text-lg text-[color:var(--hero-muted)]">
+                    {mockTutor.title}
+                  </p>
+                </div>
+
+                <p className="max-w-3xl text-base leading-relaxed text-[color:var(--hero-muted)]">
+                  {mockTutor.bio}
                 </p>
-                <h1 className="text-3xl font-semibold leading-tight sm:text-4xl md:text-5xl">
-                  <span className="block text-[color:var(--hero-foreground)]">
-                    Xin chào, tôi là
+
+                <div className="flex flex-wrap items-center gap-3 text-sm text-[color:var(--hero-muted)]">
+                  <span className="rounded-full bg-transparent/80 px-3 py-1">
+                    {mockTutor.email}
                   </span>
-                  <span className="block bg-gradient-to-r from-[color:var(--primary)] via-[color:var(--accent)] to-[color:var(--secondary)] bg-clip-text text-transparent">
-                    {mockTutor.name}
+                  <span className="rounded-full bg-transparent/80 px-3 py-1">
+                    {mockTutor.phone}
                   </span>
-                </h1>
-                <p className="text-lg text-[color:var(--hero-muted)]">
-                  {mockTutor.title}
-                </p>
+                  <span className="rounded-full bg-transparent/80 px-3 py-1 font-semibold text-[color:var(--hero-foreground)]">
+                    {mockTutor.location}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <button className="rounded-xl bg-[color:var(--primary)] px-4 py-2.5 text-sm font-semibold text-[color:var(--background)] shadow-lg shadow-[color-mix(in_oklab,var(--primary)_35%,transparent)] transition hover:shadow-[color-mix(in_oklab,var(--primary)_45%,transparent)]">
+                    Download CV
+                  </button>
+                  <button className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[color:var(--hero-foreground)] transition hover:border-[color:var(--primary)] hover:text-[color:var(--foreground)]">
+                    View Projects
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {mockTutor.skills.map((skill) => (
+                    <Badge
+                      key={skill}
+                      variant="secondary"
+                      className=" bg-transparent/90 px-3 py-1 text-xs text-[color:var(--hero-foreground)]"
+                    >
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
               </div>
 
-              <p className="max-w-3xl text-base leading-relaxed text-[color:var(--hero-muted)]">
-                {mockTutor.bio}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3 text-sm text-[color:var(--hero-muted)]">
-                <span className="rounded-full border border-[color:var(--hero-border)] bg-[color:var(--hero-surface)]/80 px-3 py-1">
-                  {mockTutor.email}
-                </span>
-                <span className="rounded-full border border-[color:var(--hero-border)] bg-[color:var(--hero-surface)]/80 px-3 py-1">
-                  {mockTutor.phone}
-                </span>
-                <span className="rounded-full border border-[color:var(--hero-border)] bg-[color:var(--hero-surface)]/80 px-3 py-1 font-semibold text-[color:var(--hero-foreground)]">
-                  {mockTutor.location}
-                </span>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <button className="rounded-xl bg-[color:var(--primary)] px-4 py-2.5 text-sm font-semibold text-[color:var(--background)] shadow-lg shadow-[color-mix(in_oklab,var(--primary)_35%,transparent)] transition hover:shadow-[color-mix(in_oklab,var(--primary)_45%,transparent)]">
-                  Download CV
-                </button>
-                <button className="rounded-xl border border-[color:var(--hero-border)] px-4 py-2.5 text-sm font-semibold text-[color:var(--hero-foreground)] transition hover:border-[color:var(--primary)] hover:text-[color:var(--foreground)]">
-                  View Projects
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-2 pt-1">
-                {mockTutor.skills.map((skill) => (
-                  <Badge
-                    key={skill}
-                    variant="secondary"
-                    className="border border-[color:var(--hero-border)] bg-[color:var(--hero-surface)]/90 px-3 py-1 text-xs text-[color:var(--hero-foreground)]"
-                  >
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div className="relative flex flex-col items-center justify-center gap-5">
-              <div className="relative h-[240px] w-[240px] sm:h-[280px] sm:w-[280px] lg:h-[320px] lg:w-[320px]">
-                <Avatar className="relative h-full w-full rounded-full bg-transparent text-[color:var(--hero-foreground)] shadow-none">
+              <div className="relative flex flex-col items-center justify-center gap-5">
+                <Avatar className="relative h-[240px] w-[240px] rounded-[24px] bg-transparent/50 text-[color:var(--hero-foreground)] shadow-none sm:h-[280px] sm:w-[280px] lg:h-[320px] lg:w-[320px]">
                   <AvatarImage
                     src="/ethan"
                     alt={`${mockTutor.name} avatar`}
@@ -717,47 +904,46 @@ export default function Page() {
                       .toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
+                <div className="flex items-center justify-center gap-3">
+                  {socialLinks.map(({ label, icon: Icon, href }) => (
+                    <a
+                      key={label}
+                      href={href}
+                      aria-label={label}
+                      className="group rounded-2xl bg-transparent/70 p-2 text-[color:var(--hero-foreground)] transition hover:border-[color:var(--primary)] hover:text-[color:var(--primary)]"
+                    >
+                      <Icon className="size-5" strokeWidth={1.6} />
+                    </a>
+                  ))}
+                </div>
               </div>
-              <div className="flex items-center justify-center gap-3">
-                {socialLinks.map(({ label, icon: Icon, href }) => (
-                  <a
+
+              <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-4 lg:col-span-2 lg:gap-7">
+                {stats.map(({ label, value, hint, icon: Icon }) => (
+                  <div
                     key={label}
-                    href={href}
-                    aria-label={label}
-                    className="group rounded-2xl border border-[color:var(--hero-border)] bg-[color:var(--hero-surface)]/70 p-2 text-[color:var(--hero-foreground)] transition hover:border-[color:var(--primary)] hover:text-[color:var(--primary)]"
+                    className="group relative overflow-hidden rounded-2xl  bg-[color:var(--background)]/80 px-5 py-4 backdrop-blur"
                   >
-                    <Icon className="size-5" strokeWidth={1.6} />
-                  </a>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground/80">
+                      <span>{label}</span>
+                      <Icon className="size-5 text-foreground/80" />
+                    </div>
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <span className="text-3xl font-semibold text-foreground">
+                        {value}
+                      </span>
+                      <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground/80">
+                        {hint}
+                      </span>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div className="relative grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-4 lg:col-span-2 lg:gap-7">
-              {stats.map(({ label, value, hint, icon: Icon }) => (
-                <div
-                  key={label}
-                  className="group relative overflow-hidden rounded-2xl border border-[color:var(--border)]/60 bg-[color:var(--background)]/70 px-5 py-4 backdrop-blur"
-                >
-                  <div className="flex items-center justify-between text-sm text-muted-foreground/80">
-                    <span>{label}</span>
-                    <Icon className="size-5 text-foreground/80" />
-                  </div>
-                  <div className="mt-3 flex items-baseline gap-2">
-                    <span className="text-3xl font-semibold text-foreground">
-                      {value}
-                    </span>
-                    <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground/80">
-                      {hint}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <GlobeShowcase slides={showcaseItems} />
-          </section>
+            <LayeredCarouselSection />
+          </div>
         </div>
-      </div>
       </SidebarInset>
     </SidebarProvider>
   );
