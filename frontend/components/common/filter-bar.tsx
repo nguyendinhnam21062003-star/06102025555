@@ -155,7 +155,7 @@ export function FilterBar({
             variant="ghost"
             size="sm"
             onClick={clearAll}
-            className="text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10 rounded-lg transition-colors duration-150"
+            className="text-[color:var(--muted-foreground)] hover:text-[color:var(--hover-foreground)] hover:bg-[color:var(--hover-surface)] rounded-lg transition-colors duration-150"
           >
             <X className="mr-1 h-4 w-4" />
             Xoá tất cả
@@ -172,7 +172,7 @@ export function FilterBar({
               size="icon"
               aria-label="Mở bộ lọc"
               className={cn(
-                "h-10 w-10 rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10 transition-colors duration-150"
+                "h-10 w-10 rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)] transition-colors duration-150"
               )}
             >
               <Filter className="h-4 w-4 text-[color:var(--muted-foreground)]" />
@@ -209,7 +209,7 @@ export function FilterBar({
               <Button
                 variant="ghost"
                 onClick={clearAll}
-                className="justify-start text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10 transition-colors duration-150"
+                className="justify-start text-[color:var(--muted-foreground)] hover:text-[color:var(--hover-foreground)] hover:bg-[color:var(--hover-surface)] transition-colors duration-150"
               >
                 <X className="mr-2 h-4 w-4" />
                 Xoá tất cả
@@ -258,7 +258,7 @@ function MultiSelectCombobox({
           className={cn(
             "justify-between h-10 md:h-11 rounded-xl transition-colors duration-150",
             fullWidth ? "w-full" : "w-auto",
-            "bg-[color:var(--card)] border border-[color:var(--border)] hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10"
+            "bg-[color:var(--card)] border border-[color:var(--border)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]"
           )}
         >
           <span
@@ -297,7 +297,7 @@ function MultiSelectCombobox({
                     value={item}
                     onSelect={() => onToggle(item)}
                     className={cn(
-                      "text-[color:var(--foreground)] hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10",
+                      "text-[color:var(--foreground)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]",
                       // ép trạng thái focus/selected có cùng style với hover
                       "[&[aria-selected='true']]:bg-[color:var(--primary)]/5 dark:[&[aria-selected='true']]:bg-[color:var(--primary)]/10 [&[aria-selected='true']]:text-[color:var(--foreground)]"
                     )}
@@ -328,3 +328,4 @@ function MultiSelectCombobox({
 }
 
 export default FilterBar;
+

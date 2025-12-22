@@ -71,7 +71,7 @@ export function TabsSwitch({
                   "rounded-lg px-3 md:px-4 text-sm font-medium",
                   "transition-colors duration-150",
                   "data-[state=active]:bg-[color:var(--primary)] data-[state=active]:text-[color:var(--primary-foreground)]",
-                  "data-[state=inactive]:text-[color:var(--muted-foreground)] hover:bg-[color:var(--muted)]"
+                  "data-[state=inactive]:text-[color:var(--muted-foreground)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]"
                 )}
               >
                 {t.label}
@@ -114,7 +114,7 @@ function MobileTabsPicker({
           className={cn(
             "h-10 rounded-xl gap-2 w-full sm:w-auto",
             "border border-[color:var(--border)] bg-[color:var(--card)]",
-            "text-[color:var(--foreground)] hover:bg-[color:var(--muted)] transition-colors"
+            "text-[color:var(--foreground)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)] transition-colors"
           )}
           aria-label="Chọn tab"
         >
@@ -147,7 +147,7 @@ function MobileTabsPicker({
                     "cursor-pointer transition-colors",
                     t.value === value
                       ? "text-[color:var(--primary)] bg-[color:var(--muted)]"
-                      : "text-[color:var(--foreground)] hover:bg-[color:var(--muted)]"
+                      : "text-[color:var(--foreground)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]"
                   )}
                 >
                   {t.label}

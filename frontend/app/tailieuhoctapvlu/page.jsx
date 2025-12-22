@@ -238,7 +238,7 @@ export default function TaiLieuHocTapPage() {
                       <TableRow
                         key={doc.title}
                         onClick={() => setSelectedDoc(doc)}
-                        className="cursor-pointer hover:bg-[color:var(--primary)]/5 transition-colors"
+                        className="cursor-pointer hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)] transition-colors"
                       >
                         <TableCell className="font-medium text-[color:var(--primary)]">
                           {doc.title}
@@ -377,3 +377,4 @@ export default function TaiLieuHocTapPage() {
     </SidebarProvider>
   );
 }
+

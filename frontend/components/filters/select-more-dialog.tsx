@@ -190,7 +190,7 @@ export function SelectMoreDialog({
               const checked = tempSelected.includes(it.id);
               return (
                 <li key={it.id}>
-                  <label className="flex items-center gap-2 cursor-pointer select-none border rounded-lg px-3 py-2 hover:bg-[color:var(--muted)] transition-colors">
+                  <label className="flex items-center gap-2 cursor-pointer select-none border rounded-lg px-3 py-2 hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)] transition-colors">
                     <Checkbox
                       checked={checked}
                       onCheckedChange={() => toggle(it.id)}

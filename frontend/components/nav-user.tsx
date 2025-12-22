@@ -43,7 +43,7 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="text-[color:var(--foreground)] hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="text-[color:var(--foreground)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)] data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
                 <AvatarImage src={user.avatar} alt={user.name} />
@@ -80,21 +80,21 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="text-[color:var(--foreground)] hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10">
+              <DropdownMenuItem className="text-[color:var(--foreground)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]">
                 <IconUserCircle />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-[color:var(--foreground)] hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10">
+              <DropdownMenuItem className="text-[color:var(--foreground)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]">
                 <IconCreditCard />
                 Billing
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-[color:var(--foreground)] hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10">
+              <DropdownMenuItem className="text-[color:var(--foreground)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]">
                 <IconNotification />
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-[color:var(--foreground)] hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10">
+            <DropdownMenuItem className="text-[color:var(--foreground)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]">
               <IconLogout />
               Log out
             </DropdownMenuItem>

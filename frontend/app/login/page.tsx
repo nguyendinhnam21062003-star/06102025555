@@ -137,14 +137,14 @@ function LoginForm({ googleAuthUrl }: { googleAuthUrl: string }) {
           Bằng việc tiếp tục, bạn đồng ý với{" "}
           <button
             type="button"
-            className="underline underline-offset-2 hover:text-foreground"
+            className="underline underline-offset-2 hover:text-[color:var(--hover-foreground)]"
           >
             Điều khoản sử dụng
           </button>{" "}
           và{" "}
           <button
             type="button"
-            className="underline underline-offset-2 hover:text-foreground"
+            className="underline underline-offset-2 hover:text-[color:var(--hover-foreground)]"
           >
             Chính sách bảo mật
           </button>
@@ -161,7 +161,7 @@ function GoogleLoginButton({ href }: { href: string }) {
       asChild
       variant="outline"
       size="lg"
-      className="w-full justify-center bg-background text-foreground hover:bg-background/80"
+      className="w-full justify-center bg-background text-foreground hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]"
     >
       <Link href={href} prefetch={false} aria-label="Đăng nhập với Google">
         <span className="mr-2 inline-flex size-8 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground shadow-[0_0_0_1px_var(--border)]">
@@ -179,7 +179,7 @@ function FacebookLoginButton({ disabled }: { disabled?: boolean }) {
       type="button"
       variant="outline"
       size="lg"
-      className="w-full justify-center bg-background/80 text-foreground/90 hover:bg-background/80"
+      className="w-full justify-center bg-background/80 text-foreground/90 hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]"
       disabled={disabled}
       aria-disabled={disabled}
     >
@@ -193,3 +193,5 @@ function FacebookLoginButton({ disabled }: { disabled?: boolean }) {
     </Button>
   );
 }
+
+

@@ -110,8 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <School className="!size-5" />
-                <span className="text-base font-semibold">Learning Space</span>
+                <span className="text-base font-semibold">LEARNING SPACE</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

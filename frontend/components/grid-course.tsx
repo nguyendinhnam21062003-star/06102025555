@@ -98,7 +98,7 @@ export function GridCourse() {
           <div className="absolute right-2 top-2 z-10">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button className="rounded-full p-1 hover:bg-muted transition-colors">
+                <button className="rounded-full p-1 hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)] transition-colors">
                   <BookmarkPlus className="size-6" />
                 </button>
               </TooltipTrigger>

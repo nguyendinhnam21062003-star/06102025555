@@ -278,7 +278,7 @@ function ThumbnailCarousel({
                   style={{ backgroundImage: `url(${slide.image})` }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent transition duration-300 group-hover:from-black/50" />
-                <div className="absolute inset-0 rounded-xl border border-transparent transition duration-300 group-hover:border-white/30" />
+                <div className="absolute inset-0 rounded-xl border border-transparent transition duration-300 group-hover:border-[color:var(--hover-surface)]" />
                 <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-left text-xs text-white">
                   <div className="truncate">
                     <p className="font-semibold leading-tight">{slide.title}</p>
@@ -871,7 +871,7 @@ export default function Page() {
                   <button className="rounded-xl bg-[color:var(--primary)] px-4 py-2.5 text-sm font-semibold text-[color:var(--background)] shadow-lg shadow-[color-mix(in_oklab,var(--primary)_35%,transparent)] transition hover:shadow-[color-mix(in_oklab,var(--primary)_45%,transparent)]">
                     Download CV
                   </button>
-                  <button className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[color:var(--hero-foreground)] transition hover:border-[color:var(--primary)] hover:text-[color:var(--foreground)]">
+                  <button className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[color:var(--hero-foreground)] transition hover:border-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]">
                     View Projects
                   </button>
                 </div>
@@ -910,7 +910,7 @@ export default function Page() {
                       key={label}
                       href={href}
                       aria-label={label}
-                      className="group rounded-2xl bg-transparent/70 p-2 text-[color:var(--hero-foreground)] transition hover:border-[color:var(--primary)] hover:text-[color:var(--primary)]"
+                      className="group rounded-2xl bg-transparent/70 p-2 text-[color:var(--hero-foreground)] transition hover:border-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]"
                     >
                       <Icon className="size-5" strokeWidth={1.6} />
                     </a>
@@ -948,3 +948,5 @@ export default function Page() {
     </SidebarProvider>
   );
 }
+
+

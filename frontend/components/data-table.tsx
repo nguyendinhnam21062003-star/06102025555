@@ -1,7 +1,6 @@
+﻿"use client";
 
-"use client"
-
-import * as React from "react"
+import * as React from "react";
 import {
   IconChevronDown,
   IconChevronLeft,
@@ -12,10 +11,10 @@ import {
   IconLayoutColumns,
   IconLink,
   IconPlus,
-  IconLockOpen,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 import {
   ColumnDef,
+  type CellContext,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
@@ -23,13 +22,13 @@ import {
   SortingState,
   useReactTable,
   VisibilityState,
-} from "@tanstack/react-table"
-import { z } from "zod"
+} from "@tanstack/react-table";
+import { z } from "zod";
 
-import { useIsMobile } from "@/hooks/use-mobile"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Drawer,
   DrawerClose,
@@ -39,7 +38,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "@/components/ui/drawer"
+} from "@/components/ui/drawer";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -47,15 +46,15 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -63,24 +62,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const relationItemSchema = z.object({ id: z.number(), name: z.string() });
+
+// DB-standardized (snake_case) document shape based on `backend/prisma/schema.prisma` model `documents`.
 export const documentSchema = z.object({
   id: z.number(),
-  user_id: z.number(),
+  user_id: z.number().optional().nullable(),
   title: z.string(),
-  numeric_score: z.number().optional().nullable(),
+  numeric_score: z.union([z.number(), z.string()]).optional().nullable(),
   grade_band: z.string().optional().nullable(),
   instructor_name: z.string().optional().nullable(),
   document_type: z.string().optional().nullable(),
   access_type: z.string().optional().nullable(),
-  price: z.number().optional().nullable(),
+  price: z.union([z.number(), z.string()]).optional().nullable(),
   suitable_school: z.string().optional().nullable(),
   short_description: z.string().optional().nullable(),
   resource_type: z.string(),
@@ -89,73 +86,316 @@ export const documentSchema = z.object({
   mime_type: z.string().optional().nullable(),
   storage_provider: z.string().optional().nullable(),
   file_size: z.number().optional().nullable(),
-  created_at: z.string().optional().nullable(),
-  updated_at: z.string().optional().nullable(),
-  document_subjects: z.array(z.string()).optional().nullable(),
-  document_fields: z.array(z.string()).optional().nullable(),
-})
+  created_at: z.union([z.string(), z.date()]).optional().nullable(),
+  updated_at: z.union([z.string(), z.date()]).optional().nullable(),
+  document_fields: z.array(relationItemSchema).optional().nullable(),
+  document_subjects: z.array(relationItemSchema).optional().nullable(),
+});
 
-type DocumentRow = z.infer<typeof documentSchema>
+// Backwards-compatible shape (camelCase) used by current backend mapping in `backend/src/documents/documents.service.ts`.
+const documentApiSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  shortDescription: z.string().optional().nullable(),
+  gradeBand: z.string().optional().nullable(),
+  numericScore: z.union([z.number(), z.string()]).optional().nullable(),
+  resourceType: z.string(),
+  resourceUrl: z.string(),
+  mimeType: z.string().optional().nullable(),
+  createdAt: z.union([z.string(), z.date()]).optional().nullable(),
+  updatedAt: z.union([z.string(), z.date()]).optional().nullable(),
+  fields: z.array(relationItemSchema).optional().nullable(),
+  subjects: z.array(relationItemSchema).optional().nullable(),
+  accessType: z.string().optional().nullable(),
+  price: z.union([z.number(), z.string()]).optional().nullable(),
+});
 
-const formatCurrency = (value?: number | null) => {
-  if (value === null || value === undefined) return "-"
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  }).format(Number(value))
+type DocumentDbRow = z.infer<typeof documentSchema>;
+type DocumentApiRow = z.infer<typeof documentApiSchema>;
+type DocumentRowInput = DocumentDbRow | DocumentApiRow;
+
+function normalizeDocumentRow(row: unknown): DocumentDbRow | null {
+  const dbParsed = documentSchema.safeParse(row);
+  if (dbParsed.success) return dbParsed.data;
+
+  const apiParsed = documentApiSchema.safeParse(row);
+  if (!apiParsed.success) return null;
+
+  const item = apiParsed.data;
+  return {
+    id: item.id,
+    user_id: null,
+    title: item.title,
+    numeric_score: item.numericScore ?? null,
+    grade_band: item.gradeBand ?? null,
+    instructor_name: null,
+    document_type: null,
+    access_type: item.accessType ?? null,
+    price: item.price ?? null,
+    suitable_school: null,
+    short_description: item.shortDescription ?? null,
+    resource_type: item.resourceType,
+    resource_url: item.resourceUrl,
+    embed_allowed: null,
+    mime_type: item.mimeType ?? null,
+    storage_provider: null,
+    file_size: null,
+    created_at: item.createdAt ?? null,
+    updated_at: item.updatedAt ?? null,
+    document_fields: item.fields ?? null,
+    document_subjects: item.subjects ?? null,
+  };
 }
 
-const formatFileSize = (value?: number | null) => {
-  if (value === null || value === undefined) return "-"
-  if (value === 0) return "0 B"
-  const units = ["B", "KB", "MB", "GB"]
-  const idx = Math.min(
-    Math.floor(Math.log(value) / Math.log(1024)),
-    units.length - 1
-  )
-  const size = value / Math.pow(1024, idx)
-  return `${size.toFixed(size >= 10 ? 0 : 1)} ${units[idx]}`
-}
+const parseNumber = (value?: number | string | null) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  const normalized = value.trim();
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+};
 
-const formatDate = (value?: string | null) => {
-  if (!value) return "-"
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return value
+const safeText = (value?: string | null) => value?.trim() || "-";
+
+const formatRelations = (value?: { name: string }[] | null) =>
+  value && value.length ? value.map((item) => item.name).join(", ") : "-";
+
+const formatDate = (value?: string | Date | null) => {
+  if (!value) return "-";
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime()))
+    return typeof value === "string" ? value : "-";
   return parsed.toLocaleDateString("vi-VN", {
     year: "numeric",
     month: "short",
     day: "numeric",
-  })
-}
+  });
+};
 
-const formatScore = (value?: number | null) => {
-  if (value === null || value === undefined) return "-"
-  return value.toFixed(2)
-}
+const formatScore = (value?: number | string | null) => {
+  if (value === null || value === undefined) return "-";
+  const parsed = parseNumber(value);
+  if (parsed === null) return String(value);
+  return parsed.toFixed(2);
+};
 
-const safeText = (value?: string | null) => value?.trim() || "-"
+const formatCurrency = (value?: number | string | null) => {
+  if (value === null || value === undefined) return "-";
+  const parsed = parseNumber(value);
+  if (parsed === null) return String(value);
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  }).format(parsed);
+};
 
-const formatList = (value?: string[] | null) =>
-  value && value.length ? value.join(", ") : "-"
+const formatAccess = (
+  accessType?: string | null,
+  price?: number | string | null
+) => {
+  const normalized = (accessType || "").trim().toLowerCase();
+  const isFree = normalized === "free";
+  const badgeLabel = accessType?.trim() || "KhA'ng rAæ";
+  const priceLabel = isFree
+    ? "Mi ¯.n phA-"
+    : price === null || price === undefined
+    ? "KhA'ng rAæ"
+    : formatCurrency(price);
+  return { isFree, badgeLabel, priceLabel };
+};
+
+const DEFAULT_HIDDEN_COLUMNS: VisibilityState = {
+  id: false,
+  user_id: false,
+  short_description: false,
+  instructor_name: false,
+  price: false,
+  resource_url: false,
+  document_type: false,
+  embed_allowed: false,
+  mime_type: false,
+  storage_provider: false,
+  file_size: false,
+  created_at: false,
+  updated_at: false,
+};
 
 export function DataTable({
   data: initialData,
+  savedData: initialSavedData,
+  hideLink = false,
 }: {
-  data: DocumentRow[]
+  data: DocumentRowInput[];
+  savedData?: DocumentRowInput[];
+  hideLink?: boolean;
 }) {
-  const data = React.useMemo(() => initialData, [initialData])
-  const [rowSelection, setRowSelection] = React.useState({})
+  const myDocs = React.useMemo(() => {
+    return (initialData ?? [])
+      .map((row) => normalizeDocumentRow(row))
+      .filter((row): row is DocumentDbRow => row !== null);
+  }, [initialData]);
+
+  const savedDocs = React.useMemo(() => {
+    return (initialSavedData ?? [])
+      .map((row) => normalizeDocumentRow(row))
+      .filter((row): row is DocumentDbRow => row !== null);
+  }, [initialSavedData]);
+
+  const [view, setView] = React.useState<"my-docs" | "saved-docs">("my-docs");
+  const data = React.useMemo(
+    () => (view === "my-docs" ? myDocs : savedDocs),
+    [myDocs, savedDocs, view]
+  );
+  const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
-  const [sorting, setSorting] = React.useState<SortingState>([])
+    React.useState<VisibilityState>(DEFAULT_HIDDEN_COLUMNS);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
-  })
+  });
 
-  const columns = React.useMemo<ColumnDef<DocumentRow>[]>(() => {
-    return [
+  React.useEffect(() => {
+    setRowSelection({});
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [view]);
+
+  const columns = React.useMemo<ColumnDef<DocumentDbRow>[]>(() => {
+    // Sắp xếp theo mức độ quan trọng từ trái sang phải.
+    const dbKeys: Array<keyof DocumentDbRow> = [
+      "title",
+      "access_type",
+      "price",
+      "resource_type",
+      "resource_url",
+      "numeric_score",
+      "grade_band",
+      "document_fields",
+      "document_subjects",
+      "suitable_school",
+      "document_type",
+      "instructor_name",
+      "user_id",
+      "id",
+      "mime_type",
+      "storage_provider",
+      "file_size",
+      "embed_allowed",
+      "created_at",
+      "updated_at",
+      "short_description",
+    ];
+
+    const renderDbCell = (key: keyof DocumentDbRow, row: DocumentDbRow) => {
+      switch (key) {
+        case "title":
+          return <TableCellViewer item={row} hideLink={hideLink} />;
+        case "id":
+        case "user_id":
+        case "file_size":
+          return (
+            <span className="font-mono text-xs text-muted-foreground">
+              {row[key] ?? "-"}
+            </span>
+          );
+        case "numeric_score":
+          return (
+            <Badge variant="secondary" className="w-fit">
+              {formatScore(row.numeric_score)}
+            </Badge>
+          );
+        case "resource_type":
+          return (
+            <Badge variant="outline" className="text-muted-foreground px-1.5">
+              {safeText(row.resource_type)}
+            </Badge>
+          );
+        case "resource_url": {
+          const url = row.resource_url;
+          if (!url) return <span className="text-muted-foreground">-</span>;
+          if (hideLink) {
+            return (
+              <span className="text-muted-foreground font-mono text-xs truncate max-w-[360px] block">
+                {url}
+              </span>
+            );
+          }
+          return (
+            <a
+              href={url}
+              className="text-primary inline-flex items-center gap-1 font-mono text-xs underline decoration-dotted decoration-primary/60 max-w-[360px] truncate"
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Open resource for ${row.title}`}
+            >
+              <IconLink className="size-4 shrink-0" />
+              <span className="truncate">{url}</span>
+            </a>
+          );
+        }
+        case "access_type": {
+          const access = formatAccess(row.access_type, row.price);
+          return (
+            <Badge
+              variant="outline"
+              className={`px-2 ${
+                access.isFree
+                  ? "bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] border-[color:var(--secondary)]"
+                  : "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] border-[color:var(--primary)]"
+              }`}
+            >
+              {access.badgeLabel}
+            </Badge>
+          );
+        }
+        case "price":
+          return (
+            <span className="text-muted-foreground">
+              {formatCurrency(row.price)}
+            </span>
+          );
+        case "created_at":
+        case "updated_at":
+          return (
+            <span className="text-muted-foreground">
+              {formatDate(row[key])}
+            </span>
+          );
+        case "embed_allowed":
+          return (
+            <span className="text-muted-foreground">
+              {row.embed_allowed === null || row.embed_allowed === undefined
+                ? "-"
+                : row.embed_allowed
+                ? "true"
+                : "false"}
+            </span>
+          );
+        case "document_fields":
+        case "document_subjects":
+          return (
+            <span className="text-muted-foreground">
+              {formatRelations(row[key] || undefined)}
+            </span>
+          );
+        case "short_description":
+          return (
+            <span className="text-muted-foreground line-clamp-2 max-w-[360px]">
+              {safeText(row.short_description)}
+            </span>
+          );
+        default:
+          return (
+            <span className="text-muted-foreground">
+              {safeText(row[key] as any)}
+            </span>
+          );
+      }
+    };
+
+    const baseColumns: ColumnDef<DocumentDbRow>[] = [
       {
         id: "select",
         header: ({ table }) => (
@@ -165,7 +405,9 @@ export function DataTable({
                 table.getIsAllPageRowsSelected() ||
                 (table.getIsSomePageRowsSelected() && "indeterminate")
               }
-              onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+              onCheckedChange={(value) =>
+                table.toggleAllPageRowsSelected(!!value)
+              }
               aria-label="Select all"
             />
           </div>
@@ -182,111 +424,15 @@ export function DataTable({
         enableSorting: false,
         enableHiding: false,
       },
-      {
-        accessorKey: "title",
-        header: "Title",
-        cell: ({ row }) => <TableCellViewer item={row.original} />,
-        enableHiding: false,
-      },
-      {
-        accessorKey: "document_type",
-        header: "Document Type",
-        cell: ({ row }) => (
-          <Badge variant="outline" className="text-muted-foreground px-1.5">
-            {safeText(row.original.document_type)}
-          </Badge>
-        ),
-      },
-      {
-        accessorKey: "document_subjects",
-        header: "Subject",
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">
-            {formatList(row.original.document_subjects || undefined)}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "document_fields",
-        header: "Fields",
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">
-            {formatList(row.original.document_fields || undefined)}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "grade_band",
-        header: "Grade Band",
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">{safeText(row.original.grade_band)}</span>
-        ),
-      },
-      {
-        accessorKey: "instructor_name",
-        header: "Instructor",
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">
-            {safeText(row.original.instructor_name)}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "numeric_score",
-        header: "Score",
-        cell: ({ row }) => (
-          <Badge variant="secondary" className="w-fit">
-            {formatScore(row.original.numeric_score)}
-          </Badge>
-        ),
-      },
-      {
-        accessorKey: "access_type",
-        header: "Access",
-        cell: ({ row }) => {
-          const isFree = (row.original.access_type || "").toLowerCase() === "free"
-          if (!isFree) {
-            return (
-              <span className="text-foreground font-medium">
-                {formatCurrency(row.original.price)}
-              </span>
-            )
-          }
-          return (
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className="px-2 bg-primary/10 text-primary border-primary/30"
-              >
-                <IconLockOpen className="size-4" />
-                {row.original.access_type || "Free"}
-              </Badge>
-            </div>
-          )
-        },
-      },
-      {
-        accessorKey: "suitable_school",
-        header: "Suitable School",
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">{safeText(row.original.suitable_school)}</span>
-        ),
-      },
-      {
-        accessorKey: "resource_url",
-        header: () => <div className="w-12 text-center">Link</div>,
-        cell: ({ row }) => (
-          <a
-            href={row.original.resource_url}
-            className="text-primary inline-flex items-center justify-center w-10"
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`Open resource for ${row.original.title}`}
-          >
-            <IconLink className="size-4" />
-          </a>
-        ),
-      },
+      ...dbKeys.map(
+        (key): ColumnDef<DocumentDbRow> => ({
+          accessorKey: key as string,
+          header: key as string,
+          cell: (ctx: CellContext<DocumentDbRow, unknown>) =>
+            renderDbCell(key, ctx.row.original),
+          enableHiding: key !== "id" && key !== "title",
+        })
+      ),
       {
         id: "actions",
         cell: () => (
@@ -311,8 +457,10 @@ export function DataTable({
           </DropdownMenu>
         ),
       },
-    ]
-  }, [])
+    ];
+
+    return baseColumns;
+  }, [hideLink]);
 
   const table = useReactTable({
     data,
@@ -332,18 +480,163 @@ export function DataTable({
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-  })
+  });
+
+  const emptyText =
+    view === "my-docs"
+      ? "Ch’øa cA3 tAÿi li ¯Øu."
+      : "Ch’øa cA3 tAÿi li ¯Øu Ž`Aœ l’øu.";
+
+  const TablePanel = ({ className }: { className?: string }) => (
+    <div className={className}>
+      <div className="overflow-auto rounded-lg border bg-transparent">
+        <Table className="bg-[var(--card)] text-[var(--foreground)]">
+          <TableHeader className="sticky top-0 z-10 bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] shadow-[inset_0_-1px_0_var(--border)]">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id} colSpan={header.colSpan}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody className="bg-[var(--card)] **:data-[slot=table-cell]:first:w-8">
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className="bg-transparent hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)] data-[state=selected]:bg-[var(--muted)]/40 border-[var(--border)]"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow className="bg-[var(--card)]">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  {emptyText}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between px-4">
+        <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+          {table.getSelectedRowModel().rows.length} of{" "}
+          {table.getRowModel().rows.length} row(s) selected.
+        </div>
+        <div className="flex w-full items-center gap-8 lg:w-fit">
+          <div className="hidden items-center gap-2 lg:flex">
+            <Label htmlFor="rows-per-page" className="text-sm font-medium">
+              Rows per page
+            </Label>
+            <Select
+              value={`${table.getState().pagination.pageSize}`}
+              onValueChange={(value) => {
+                table.setPageSize(Number(value));
+              }}
+            >
+              <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+                <SelectValue
+                  placeholder={table.getState().pagination.pageSize}
+                />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[10, 20, 30, 40, 50].map((pageSize) => (
+                  <SelectItem key={pageSize} value={`${pageSize}`}>
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex w-fit items-center justify-center text-sm font-medium">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {Math.max(table.getPageCount(), 1)}
+          </div>
+          <div className="ml-auto flex items-center gap-2 lg:ml-0">
+            <Button
+              variant="outline"
+              className="hidden h-8 w-8 p-0 lg:flex"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Go to first page</span>
+              <IconChevronsLeft />
+            </Button>
+            <Button
+              variant="outline"
+              className="size-8"
+              size="icon"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Go to previous page</span>
+              <IconChevronLeft />
+            </Button>
+            <Button
+              variant="outline"
+              className="size-8"
+              size="icon"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Go to next page</span>
+              <IconChevronRight />
+            </Button>
+            <Button
+              variant="outline"
+              className="hidden size-8 lg:flex"
+              size="icon"
+              onClick={() =>
+                table.setPageIndex(Math.max(table.getPageCount() - 1, 0))
+              }
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Go to last page</span>
+              <IconChevronsRight />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <Tabs
-      defaultValue="my-docs"
-      className="w-full flex-col justify-start gap-6"
+      value={view}
+      onValueChange={(next) => setView(next as "my-docs" | "saved-docs")}
+      className="w-full flex-col justify-start gap-4"
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
         <Label htmlFor="view-selector" className="sr-only">
           View
         </Label>
-        <Select defaultValue="my-docs">
+        <Select
+          value={view}
+          onValueChange={(next) => setView(next as typeof view)}
+        >
           <SelectTrigger
             className="flex w-fit @4xl/main:hidden"
             size="sm"
@@ -390,7 +683,7 @@ export function DataTable({
                     >
                       {column.id}
                     </DropdownMenuCheckboxItem>
-                  )
+                  );
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -404,140 +697,27 @@ export function DataTable({
         value="my-docs"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
       >
-        <div className="overflow-hidden rounded-lg border">
-          <Table>
-            <TableHeader className="bg-muted sticky top-0 z-10">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id} colSpan={header.colSpan}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    )
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody className="**:data-[slot=table-cell]:first:w-8">
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex items-center justify-between px-4">
-          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {table.getSelectedRowModel().rows.length} of{" "}
-            {table.getRowModel().rows.length} row(s) selected.
-          </div>
-          <div className="flex w-full items-center gap-8 lg:w-fit">
-            <div className="hidden items-center gap-2 lg:flex">
-              <Label htmlFor="rows-per-page" className="text-sm font-medium">
-                Rows per page
-              </Label>
-              <Select
-                value={`${table.getState().pagination.pageSize}`}
-                onValueChange={(value) => {
-                  table.setPageSize(Number(value))
-                }}
-              >
-                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                  <SelectValue
-                    placeholder={table.getState().pagination.pageSize}
-                  />
-                </SelectTrigger>
-                <SelectContent side="top">
-                  {[10, 20, 30, 40, 50].map((pageSize) => (
-                    <SelectItem key={pageSize} value={`${pageSize}`}>
-                      {pageSize}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
-            </div>
-            <div className="ml-auto flex items-center gap-2 lg:ml-0">
-              <Button
-                variant="outline"
-                className="hidden h-8 w-8 p-0 lg:flex"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <span className="sr-only">Go to first page</span>
-                <IconChevronsLeft />
-              </Button>
-              <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <span className="sr-only">Go to previous page</span>
-                <IconChevronLeft />
-              </Button>
-              <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                <span className="sr-only">Go to next page</span>
-                <IconChevronRight />
-              </Button>
-              <Button
-                variant="outline"
-                className="hidden size-8 lg:flex"
-                size="icon"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-              >
-                <span className="sr-only">Go to last page</span>
-                <IconChevronsRight />
-              </Button>
-            </div>
-          </div>
-        </div>
+        <TablePanel />
       </TabsContent>
-      <TabsContent value="saved-docs" className="flex flex-col px-4 lg:px-6">
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed" />
+      <TabsContent
+        value="saved-docs"
+        className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
+      >
+        <TablePanel />
       </TabsContent>
     </Tabs>
-  )
+  );
 }
 
-function TableCellViewer({ item }: { item: DocumentRow }) {
-  const isMobile = useIsMobile()
+function TableCellViewer({
+  item,
+  hideLink,
+}: {
+  item: DocumentDbRow;
+  hideLink: boolean;
+}) {
+  const isMobile = useIsMobile();
+  const updatedLabel = formatDate(item.updated_at || item.created_at);
 
   return (
     <Drawer direction={isMobile ? "bottom" : "right"}>
@@ -546,108 +726,157 @@ function TableCellViewer({ item }: { item: DocumentRow }) {
           {item.title}
         </Button>
       </DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent className="data-[vaul-drawer-direction=right]:w-[95vw] data-[vaul-drawer-direction=right]:sm:max-w-4xl data-[vaul-drawer-direction=right]:lg:max-w-5xl">
         <DrawerHeader className="gap-1">
           <DrawerTitle>{item.title}</DrawerTitle>
           <DrawerDescription className="line-clamp-3">
             {safeText(item.short_description)}
           </DrawerDescription>
         </DrawerHeader>
-        <div className="grid gap-4 overflow-y-auto px-4 pb-4 text-sm md:grid-cols-2">
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Document type</Label>
-              <div className="font-medium">{safeText(item.document_type)}</div>
+        <div className="grid gap-4 overflow-y-auto px-4 pb-4 text-sm max-h-[75vh]">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+            <div className="space-y-2 rounded-lg border p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Identity
+              </p>
+              <DetailRow label="id" value={item.id} mono />
+              <DetailRow label="user_id" value={item.user_id} mono />
+              <DetailRow label="grade_band" value={safeText(item.grade_band)} />
+              <DetailRow
+                label="suitable_school"
+                value={safeText(item.suitable_school)}
+              />
+              <DetailRow
+                label="instructor_name"
+                value={safeText(item.instructor_name)}
+              />
+              <DetailRow
+                label="document_type"
+                value={safeText(item.document_type)}
+              />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Grade band</Label>
-              <div>{safeText(item.grade_band)}</div>
+
+            <div className="space-y-2 rounded-lg border p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Access & pricing
+              </p>
+              {(() => {
+                const access = formatAccess(item.access_type, item.price);
+                return (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      access_type
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={`px-2 ${
+                          access.isFree
+                            ? "bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] border-[color:var(--secondary)]"
+                            : "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] border-[color:var(--primary)]"
+                        }`}
+                      >
+                        {access.badgeLabel}
+                      </Badge>
+                      <span className="text-[color:var(--muted-foreground)] text-sm">
+                        {access.priceLabel}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+              <DetailRow label="price" value={formatCurrency(item.price)} />
+              <DetailRow
+                label="resource_type"
+                value={safeText(item.resource_type)}
+              />
+              <DetailRow
+                label="resource_url"
+                value={
+                  hideLink ? (
+                    <span className="font-mono text-xs text-muted-foreground break-all">
+                      {item.resource_url}
+                    </span>
+                  ) : (
+                    <a
+                      href={item.resource_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary inline-flex items-center gap-1 underline decoration-dotted decoration-primary/60"
+                    >
+                      <IconLink className="size-4" />
+                      <span className="truncate">{item.resource_url}</span>
+                    </a>
+                  )
+                }
+              />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Instructor</Label>
-              <div>{safeText(item.instructor_name)}</div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">User ID</Label>
-              <div>{item.user_id}</div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Suitable school</Label>
-              <div>{safeText(item.suitable_school)}</div>
+
+            <div className="space-y-2 rounded-lg border p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                File & metadata
+              </p>
+              <DetailRow label="mime_type" value={safeText(item.mime_type)} />
+              <DetailRow
+                label="storage_provider"
+                value={safeText(item.storage_provider)}
+              />
+              <DetailRow label="file_size" value={item.file_size ?? "-"} mono />
+              <DetailRow
+                label="embed_allowed"
+                value={
+                  item.embed_allowed === null ||
+                  item.embed_allowed === undefined
+                    ? "-"
+                    : item.embed_allowed
+                    ? "true"
+                    : "false"
+                }
+              />
+              <DetailRow
+                label="created_at"
+                value={formatDate(item.created_at)}
+              />
+              <DetailRow label="updated_at" value={updatedLabel} />
             </div>
           </div>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Score</Label>
-              <div>{formatScore(item.numeric_score)}</div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2 rounded-lg border p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Relations
+              </p>
+              <DetailRow
+                label="document_fields"
+                value={formatRelations(item.document_fields || undefined)}
+              />
+              <DetailRow
+                label="document_subjects"
+                value={formatRelations(item.document_subjects || undefined)}
+              />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Access / Price</Label>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="px-2">
-                  {safeText(item.access_type)}
-                </Badge>
-                <span className="text-muted-foreground">{formatCurrency(item.price)}</span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Embed allowed</Label>
-              <div className="flex items-center gap-2">
-                {item.embed_allowed ? (
-                  <Badge variant="secondary">Yes</Badge>
-                ) : (
-                  <Badge variant="outline">No</Badge>
-                )}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Created / Updated</Label>
-              <div className="text-muted-foreground">
-                {formatDate(item.created_at)} - {formatDate(item.updated_at)}
-              </div>
+            <div className="space-y-2 rounded-lg border p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Scores
+              </p>
+              <DetailRow
+                label="numeric_score"
+                value={formatScore(item.numeric_score)}
+              />
             </div>
           </div>
-          <div className="space-y-3 md:col-span-2">
-            <div className="grid gap-3 rounded-md border p-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Resource type</Label>
-                <div>{safeText(item.resource_type)}</div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">MIME type</Label>
-                <div>{safeText(item.mime_type)}</div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Storage provider</Label>
-                <div>{safeText(item.storage_provider)}</div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">File size</Label>
-                <div>{formatFileSize(item.file_size)}</div>
-              </div>
-              <div className="space-y-1 sm:col-span-2">
-                <Label className="text-xs text-muted-foreground">Resource URL</Label>
-                <a
-                  href={item.resource_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary inline-flex items-center gap-1 underline decoration-dotted decoration-primary/60"
-                >
-                  <IconLink className="size-4" />
-                  <span className="truncate">{item.resource_url}</span>
-                </a>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Short description</Label>
-              <div className="text-muted-foreground">
-                {safeText(item.short_description)}
-              </div>
+
+          <div className="space-y-2 rounded-lg border p-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Description
+            </p>
+            <div className="text-muted-foreground">
+              {safeText(item.short_description)}
             </div>
           </div>
         </div>
         <DrawerFooter className="gap-2">
-          <Button asChild>
+          <Button asChild disabled={hideLink}>
             <a href={item.resource_url} target="_blank" rel="noreferrer">
               Open resource
             </a>
@@ -658,5 +887,28 @@ function TableCellViewer({ item }: { item: DocumentRow }) {
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
-  )
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <div
+        className={
+          mono ? "font-mono text-xs text-foreground" : "text-foreground"
+        }
+      >
+        {value ?? "-"}
+      </div>
+    </div>
+  );
 }

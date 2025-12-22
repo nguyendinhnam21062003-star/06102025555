@@ -94,7 +94,7 @@ export default function Page() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button className="rounded-full border border-border/80 bg-secondary px-4 py-2 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:border-primary/80 hover:shadow-[0_18px_50px_-28px_rgba(0,0,0,0.45)]">
+                  <button className="rounded-full border border-border/80 bg-secondary px-4 py-2 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)] hover:border-[color:var(--hover-surface)] hover:shadow-[0_18px_50px_-28px_rgba(0,0,0,0.45)]">
                     Theo dõi
                   </button>
                   <button className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition hover:-translate-y-0.5">
@@ -206,7 +206,7 @@ export default function Page() {
             {menu.map((item) => (
               <a
                 key={item}
-                className="rounded-full px-3 py-1 transition hover:bg-primary/10 hover:text-foreground"
+                className="rounded-full px-3 py-1 transition hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]"
               >
                 {item}
               </a>

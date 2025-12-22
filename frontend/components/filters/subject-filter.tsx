@@ -118,7 +118,7 @@ export function SubjectFilter({
                   onSelect={() => toggle(subject.id)}
                   className={cn(
                     "flex items-center justify-between rounded-md px-3 py-2 cursor-pointer select-none",
-                    "hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10",
+                    "hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)]",
                     "[&[aria-selected='true']]:bg-[color:var(--primary)]/5 dark:[&[aria-selected='true']]:bg-[color:var(--primary)]/10 [&[aria-selected='true']]:text-[color:var(--foreground)]"
                   )}
                 >
@@ -152,7 +152,7 @@ export function SubjectFilter({
           <button
             type="button"
             onClick={onShowMore}
-            className="w-full text-sm text-[color:var(--foreground)] hover:bg-[color:var(--primary)]/5 dark:hover:bg-[color:var(--primary)]/10 rounded-md py-1.5 transition-colors"
+            className="w-full text-sm text-[color:var(--foreground)] hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)] rounded-md py-1.5 transition-colors"
           >
             Hiển thị thêm
           </button>
@@ -161,3 +161,4 @@ export function SubjectFilter({
     </section>
   );
 }
+
