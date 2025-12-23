@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Palette } from "lucide-react";
 
 const themes = [
@@ -47,7 +48,10 @@ export function ThemeSwitcher() {
           <DropdownMenuItem
             key={t.value}
             onClick={() => handleChange(t.value)}
-            className={color === t.value ? "font-semibold text-primary" : ""}
+            className={cn(
+              "hover:bg-[color:var(--hover-surface)] hover:text-[color:var(--hover-foreground)] focus:bg-[color:var(--hover-surface)] focus:text-[color:var(--hover-foreground)]",
+              color === t.value && "font-semibold text-primary"
+            )}
           >
             {t.name}
           </DropdownMenuItem>

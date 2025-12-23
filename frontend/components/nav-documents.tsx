@@ -52,10 +52,7 @@ export function NavDocuments({ items, label = "Documents" }: NavDocumentsProps) 
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuAction
-                  showOnHover
-                  className="data-[state=open]:bg-accent rounded-sm"
-                >
+                <SidebarMenuAction showOnHover className="rounded-sm">
                   <MoreHorizontal />
                   <span className="sr-only">More</span>
                 </SidebarMenuAction>
